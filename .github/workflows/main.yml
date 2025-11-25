@@ -20,7 +20,7 @@ jobs:
     steps:
       # Step 1：將 GitHub 儲存庫的程式碼 checkout 到 runner 主機。
       - name: Code checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v16
 
       # Step 2：使用 Maven 進行建置（編譯 + 測試 + 打包）。
       - name: Maven Build
@@ -45,7 +45,7 @@ jobs:
 
       # Step 2：執行 Maven 測試（單元測試 + 整合測試）
       - name: Run tests on main branch
-        run: mvn test
+        run: maven test
 
       # Step 3：執行 Maven Checkstyle（檢查程式碼風格是否符合規範）
       - name: Checkstyle
