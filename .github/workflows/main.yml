@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v5
 
       # Step 2：使用 Maven 進行建置（編譯 + 測試 + 打包）。
-      - name: Maven Build
+      - name: mvn Build
         run: mvn install
 
 
