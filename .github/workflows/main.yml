@@ -1,115 +1,169 @@
 # ------------------------------------------------------
-# Workflow 名稱：會顯示在 GitHub Actions 頁面左側清單
+# Workflow 名稱：顯示在 GitHub Actions 左側列表
 # ------------------------------------------------------
 name: Vprofile CICD Workflow
 
 # ------------------------------------------------------
-# on: 代表觸發條件（什麼時候要執行這個 Pipeline）
+# on：定義 Workflow 的觸發條件
 # ------------------------------------------------------
 on:
-
-  # 1) push：當 push 到 main 或 develop 時執行
   push:
+    # 任何 push 到 main 或 develop 分支都會觸發
     branches: [ "main", "develop" ]
 
-  # 2) pull_request：當 PR 的目標分支是 main / develop 時執行
   pull_request:
+    # 任何 PR 送到 main 或 develop 會觸發
     branches: [ "main", "develop" ]
 
-  # 3) workflow_dispatch：允許手動 Run workflow
+  # 手動觸發 workflow（UI 點擊執行）
   workflow_dispatch:
 
-  # 4) schedule：定時排程（工作天 14:10 UTC）
-  #    → 台灣時間 22:10 (Mon–Fri)
+  # 定時執行（CRON 表達式）
+  # 格式：分 時 日 月 星期
+  # 此處為：每週一至週五，14:10（UTC）
   schedule:
     - cron: "10 14 * * 1-5"
 
-# ------------------------------------------------------
-# permissions：設定 GitHub Token 權限，降低資安風險
-# ------------------------------------------------------
-permissions:
-  contents: read   # 只允許讀取 repo，不允許寫入
 
 # ------------------------------------------------------
-# jobs：定義 Build、Testing 等工作階段
+# permissions：限制 GitHub Token 權限，提升安全性
+# ------------------------------------------------------
+permissions:
+  contents: read   # Token 只能讀取內容，不能寫入
+
+
+# ------------------------------------------------------
+# jobs：定義整個工作流程的所有 Job
 # ------------------------------------------------------
 jobs:
 
   # ======================================================
-  # 第一個 Job：Build（編譯、打包、產出 WAR + 失敗通知）
+  # Job 1：Build（編譯、打包、產出 WAR、顯示失敗通知）
   # ======================================================
   Build:
-    runs-on: ubuntu-latest    # GitHub 提供的 Ubuntu Runner
+    runs-on: ubuntu-latest   # 執行環境使用 GitHub Ubuntu Runner
 
     steps:
-      # --------------------------------------------------
-      # Step 1：將 Repo 原始碼 checkout 下來
-      # --------------------------------------------------
+      # -----------------------------
+      # 步驟 1：下載 Repo 程式碼
+      # actions/checkout 是官方提供的動作
+      # fetch-depth: 0 → 抓完整 Git 歷史（非 shallow clone）
+      # -----------------------------
       - name: Code checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0      # 下載完整 Git 歷史（避免插件找不到 commit）
+          fetch-depth: 0
 
-      # --------------------------------------------------
-      # Step 2：使用 Maven 進行建置
-      # mvn install = compile + test + package
-      # --------------------------------------------------
+      # -----------------------------
+      # 步驟 2：使用 Maven 編譯專案（compile + test + package）
+      # mvn install → 會產生 .war 與安裝到本地 Maven repo
+      # -----------------------------
       - name: Maven Build
         run: mvn install
 
-      # --------------------------------------------------
-      # Step 3：上傳 Build 後的 Artifact（WAR 檔）
-      #         可在 Actions → Artifacts 中下載
-      # --------------------------------------------------
+      # -----------------------------
+      # 步驟 3：上傳建置後的 WAR 檔案
+      # actions/upload-artifact → 便於後續 Job 或手動下載
+      # -----------------------------
       - name: Upload Build Artifact (WAR)
         uses: actions/upload-artifact@v4
         with:
-          name: vprofile-app   # Artifact 名稱
-          path: target/*.war   # 指定要上傳的 WAR 檔路徑
+          name: vprofile-app         # Artifact 名稱
+          path: target/*.war         # WAR 檔案路徑
 
-      # --------------------------------------------------
-      # Step 4：若 Build Job 失敗則通知（簡易 echo 版本）
-      # --------------------------------------------------
+      # -----------------------------
+      # 步驟 4：在 Build 失敗時輸出訊息
+      # if: failure() → 僅於前面步驟有錯誤時執行
+      # -----------------------------
       - name: Notify if Build Fails
-        if: failure()          # 僅當 Build Job 失敗時才執行
+        if: failure()
         run: echo "🚨 Build job failed! Please check logs."
 
 
   # ======================================================
-  # 第二個 Job：Testing（依條件執行 test / checkstyle）
+  # Job 2：Testing（根據分支執行不同測試）
+  #   - main 分支 → 跑完整單元測試 + checkstyle
+  #   - 其他分支 → 跳過
   # ======================================================
   Testing:
     runs-on: ubuntu-latest
-
-    # needs: Build → Build Job 成功後才執行 Testing
-    needs: Build
+    needs: Build        # 必須等 Build Job 完成
 
     steps:
-      # --------------------------------------------------
-      # Step 1：再次 checkout 原始碼（每個 job 都必須自己 checkout）
-      # --------------------------------------------------
+      # -----------------------------
+      # 同樣需要下載程式碼，因為不同 Job 的工作目錄不共享
+      # -----------------------------
       - name: Code checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # --------------------------------------------------
-      # Step 2：在 main 分支執行單元測試
-      # --------------------------------------------------
+      # -----------------------------
+      # main 分支 → 執行單元測試
+      # github.ref 會輸出完整 refs，例如：refs/heads/main
+      # -----------------------------
       - name: Run tests on main branch
-        if: github.ref == 'refs/heads/main'   # 條件：只有 main 才跑 test
+        if: github.ref == 'refs/heads/main'
         run: mvn test
 
-      # --------------------------------------------------
-      # Step 3：在 main 分支執行 Checkstyle 風格檢查
-      # --------------------------------------------------
+      # -----------------------------
+      # main 分支 → 執行 Checkstyle 程式碼品質檢查
+      # -----------------------------
       - name: Checkstyle
-        if: github.ref == 'refs/heads/main'   # 條件：只有 main 才跑 checkstyle
+        if: github.ref == 'refs/heads/main'
         run: mvn checkstyle:checkstyle
 
-      # --------------------------------------------------
-      # Step 4：其他分支跳過測試與靜態分析（加速 CI）
-      # --------------------------------------------------
+      # -----------------------------
+      # 非 main 分支 → 減少 CI 時間，不執行測試
+      # -----------------------------
       - name: Run tests on other branches
         if: github.ref != 'refs/heads/main'
         run: echo "Skipping unit tests and code analysis"
+
+
+  # ======================================================
+  # Job 3：Security_Scan（使用 Trivy 做漏洞掃描）
+  # 掃描目標：OS 漏洞 + Library 漏洞
+  # 結果輸出 JSON
+  # ======================================================
+  Security_Scan:
+    runs-on: ubuntu-latest
+    needs: Build
+
+    steps:
+      # -----------------------------
+      # 下載程式碼以進行 filesystem 掃描
+      # -----------------------------
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------
+      # 使用 Trivy 掃描目錄（scan-type: fs）
+      # 參數說明：
+      #   - scan-type: fs        掃整個檔案系統目錄
+      #   - scan-ref: .          掃描目前 Repo
+      #   - format: json         輸出為 JSON 檔
+      #   - exit-code: 0         有漏洞也不會讓 Job 失敗
+      #   - vuln-type: os,library   掃 OS 以及程式套件漏洞
+      #   - output: trivy-results.json   輸出檔名
+      # -----------------------------
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          exit-code: 0
+          vuln-type: os,library
+          output: trivy-results.json
+
+      # -----------------------------
+      # 上傳掃描結果，以便查看漏洞報告
+      # -----------------------------
+      - name: Upload Trivy scan results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-results
+          path: trivy-results.json
