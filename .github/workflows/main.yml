@@ -159,11 +159,11 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}  # 從 login step output 取得 registry
           IMAGE_TAG: ${{ github.sha }}  # 使用 commit SHA 作為 tag
+	
         run: |
+		
+		# 建置 Docker 映像
+          docker build -f Docker-files/app/multistage/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         
-          # 建置 Docker 映像
-				  docker build -f Docker-files/app/multistage/Dockerfile \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          
-          # 推送至 ECR
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+		# 推至ECR  
+		  docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
