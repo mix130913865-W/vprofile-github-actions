@@ -9,7 +9,7 @@ on:
 
   pull_request:
     branches:
-      -main
+      - main
 
 # 工作流程中所有任務（jobs）的定義。
 jobs:
