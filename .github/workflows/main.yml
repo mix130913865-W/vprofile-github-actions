@@ -24,7 +24,7 @@ on:
 # 環境變數
 # ------------------------------------------------------
 env:
-  ECR_REPOSITORY: 'vprofile-appimage'  # Docker 映像 repository 名稱
+  ECR_REPOSITORY: 'vprofile-app-image'  # Docker 映像 repository 名稱
 
 # ------------------------------------------------------
 # 權限設定
