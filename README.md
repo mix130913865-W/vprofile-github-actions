@@ -1,10 +1,10 @@
-# Vprofile CI/CD & Docker Deployment Project
+# vprofile-github-actions CI/CD & Docker Deployment Project
 
 ---
 
 ## 專案簡介
 
-Vprofile 是一個基於 Java/Maven 的 Web 應用程式，使用 Tomcat 10 運行。
+vprofile-github-actions是一個基於 Java/Maven 的 Web 應用程式，使用 Tomcat 10 運行。
 此repo展示完整的 CI/CD 流程，包括程式碼建置、測試、安全掃描，以及將 Docker 映像推送到 AWS ECR。
 
 ---
