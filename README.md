@@ -23,27 +23,6 @@ Vprofile 是一個基於 Java/Maven 的 Web 應用程式，使用 Tomcat 10 運�
 
 ---
 
-## 本地啟動方式 (Docker Compose)
-
-1. clone repo
-
-```bash
-git clone <repo URL>
-cd <repo名稱>
-```
-
-2. 建置並啟動服務
-
-```bash
-docker-compose up --build -d
-```
-
-3. 存取應用程式
-
-   * 啟動後透過 http://localhost:8080/ 存取
-
----
-
 ## CI/CD 工作流程 (.github/workflows/main.yml)
 
 * 觸發條件
